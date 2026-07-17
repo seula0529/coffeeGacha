@@ -8,7 +8,7 @@ import { drawPrize } from './data/prizes.js'
 
 const view = ref('gacha') // gacha | reveal | entry | complete
 const prize = ref(null)
-const bean = ref(null)
+const result = ref(null)
 const entry = ref(null)
 
 function handleDrawn() {
@@ -21,7 +21,7 @@ function handleEnter() {
 }
 
 function handleSubmit(payload) {
-  bean.value = payload.bean
+  result.value = payload.result
   entry.value = payload.form
   view.value = 'complete'
 }
@@ -37,7 +37,7 @@ function handleSubmit(payload) {
         v-else-if="view === 'complete'"
         key="complete"
         :prize="prize"
-        :bean="bean"
+        :result="result"
         :form="entry"
       />
     </Transition>

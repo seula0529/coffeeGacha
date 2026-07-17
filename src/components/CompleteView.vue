@@ -1,14 +1,9 @@
 <script setup>
 defineProps({
   prize: { type: Object, required: true },
-  bean: { type: Object, required: true },
+  result: { type: Object, required: true },
   form: { type: Object, required: true },
 })
-
-const receiptLabel = {
-  pickup: '직접 수령',
-  delivery: '택배 배송',
-}
 </script>
 
 <template>
@@ -19,7 +14,7 @@ const receiptLabel = {
 
     <p class="eyebrow">응모 완료</p>
     <h1 class="title">{{ form.name }}님, 접수됐어요!</h1>
-    <p class="subtitle">당첨 결과는 연락처로 안내드릴게요</p>
+    <p class="subtitle">문자 앱에서 전송 버튼을 눌러 마무리해주세요</p>
 
     <div class="summary-card">
       <div class="summary-row">
@@ -27,20 +22,20 @@ const receiptLabel = {
         <span class="row-value">{{ prize.emoji }} {{ prize.name }}</span>
       </div>
       <div class="summary-row">
-        <span class="row-label">추천 원두</span>
-        <span class="row-value">{{ bean.emoji }} {{ bean.name }}</span>
+        <span class="row-label">진단 결과</span>
+        <span class="row-value">{{ result.title }}</span>
+      </div>
+      <div class="summary-row" v-if="form.age">
+        <span class="row-label">나이</span>
+        <span class="row-value">{{ form.age }}</span>
+      </div>
+      <div class="summary-row" v-if="form.mbti">
+        <span class="row-label">MBTI</span>
+        <span class="row-value">{{ form.mbti }}</span>
       </div>
       <div class="summary-row">
         <span class="row-label">연락처</span>
         <span class="row-value">{{ form.contact }}</span>
-      </div>
-      <div class="summary-row">
-        <span class="row-label">수령 방법</span>
-        <span class="row-value">{{ receiptLabel[form.receiptMethod] }}</span>
-      </div>
-      <div class="summary-row" v-if="form.receiptMethod === 'delivery'">
-        <span class="row-label">배송지</span>
-        <span class="row-value">{{ form.address }}</span>
       </div>
     </div>
   </section>

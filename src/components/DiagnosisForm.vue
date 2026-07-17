@@ -1,7 +1,12 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { questions } from '../data/quiz.js'
-import { pickBean } from '../data/beans.js'
+import { useFormState } from '../composables/useFormState.js'
+import SlideCover from './SlideCover.vue'
+import SlideQuestion from './SlideQuestion.vue'
+import SlideImageQuestion from './SlideImageQuestion.vue'
+import SlideTextInput from './SlideTextInput.vue'
+import SlideLoading from './SlideLoading.vue'
+import SlideResult from './SlideResult.vue'
 
 const props = defineProps({
   prize: { type: Object, required: true },
@@ -9,384 +14,229 @@ const props = defineProps({
 
 const emit = defineEmits(['submit'])
 
-const step = ref('quiz') // quiz | form
-const questionIndex = ref(0)
-const answers = ref([])
+const step = ref('diagnosis') // diagnosis | entry
 
-const currentQuestion = computed(() => questions[questionIndex.value])
-const resultBean = ref(null)
+const {
+  currentStep,
+  answers,
+  progressPercent,
+  QUESTIONS,
+  LOADING_STEP,
+  RESULT_STEP,
+  slideClass,
+  startForm,
+  goNext,
+  goBack,
+  result,
+  answerSummary,
+} = useFormState()
 
-function selectOption(tag) {
-  answers.value.push(tag)
-  if (questionIndex.value < questions.length - 1) {
-    setTimeout(() => {
-      questionIndex.value += 1
-    }, 220)
+function enterForm() {
+  step.value = 'entry'
+}
+
+// ── 응모자 정보 입력 (SlideTextInput 슬라이드 이어붙이기) ──────────────────
+const ENTRY_FIELDS = [
+  { key: 'name',    label: 'Step 01', text: '이름을 알려주세요',         placeholder: '이름을 입력해주세요',   required: true },
+  { key: 'age',     label: 'Step 02', text: '나이가 어떻게 되시나요?',    placeholder: '나이를 입력해주세요',   type: 'text', inputmode: 'numeric' },
+  { key: 'mbti',    label: 'Step 03', text: 'MBTI가 궁금해요',          placeholder: '예: INFP' },
+  { key: 'contact', label: 'Step 04', text: '문자 받으실 연락처를 입력해주세요', placeholder: '010-0000-0000', type: 'tel', inputmode: 'tel', required: true },
+]
+
+const entryStep    = ref(0)
+const entryAnswers = ref({ name: '', age: '', mbti: '', contact: '' })
+
+const entrySlideClass = (i) => {
+  if (i === entryStep.value) return 'active'
+  return i < entryStep.value ? 'above' : 'below'
+}
+
+const currentEntryField = computed(() => ENTRY_FIELDS[entryStep.value])
+const isLastEntryField  = computed(() => entryStep.value === ENTRY_FIELDS.length - 1)
+const currentEntryValid = computed(() => {
+  const f = currentEntryField.value
+  if (!f.required) return true
+  return !!entryAnswers.value[f.key].trim()
+})
+
+function entryBack() {
+  if (entryStep.value > 0) entryStep.value--
+  else step.value = 'diagnosis'
+}
+
+function entryNext() {
+  if (!currentEntryValid.value) return
+  if (isLastEntryField.value) {
+    sendSms()
   } else {
-    setTimeout(() => {
-      resultBean.value = pickBean(answers.value)
-      step.value = 'form'
-    }, 320)
+    entryStep.value++
   }
 }
 
-const form = ref({
-  name: '',
-  contact: '',
-  receiptMethod: 'pickup',
-  address: '',
-})
+function sendSms() {
+  const { name, age, mbti, contact } = entryAnswers.value
+  const lines = [
+    `[커피 가챠] ${name}님의 진단 결과`,
+    result.value.title,
+    result.value.desc,
+    `나이: ${age || '-'} / MBTI: ${mbti || '-'}`,
+    `당첨 선물: ${props.prize.name}`,
+  ]
+  const body = encodeURIComponent(lines.join('\n'))
+  const to = contact.replace(/[^0-9+]/g, '')
+  window.location.href = `sms:${to}?&body=${body}`
 
-const isValid = computed(() => {
-  if (!form.value.name.trim() || !form.value.contact.trim()) return false
-  if (form.value.receiptMethod === 'delivery' && !form.value.address.trim()) return false
-  return true
-})
-
-function handleSubmit() {
-  if (!isValid.value) return
   emit('submit', {
-    bean: resultBean.value,
-    form: { ...form.value },
+    result: result.value,
+    form: { ...entryAnswers.value },
   })
 }
 </script>
 
 <template>
   <section class="diagnosis-view">
-    <template v-if="step === 'quiz'">
-      <p class="eyebrow">성향 진단</p>
-      <h1 class="title">나에게 맞는 원두는?</h1>
+    <template v-if="step === 'diagnosis'">
+      <button
+        v-if="currentStep > 0 && currentStep < RESULT_STEP"
+        class="btn-back"
+        @click="goBack"
+      >
+        ←
+      </button>
 
-      <div class="progress-dots">
-        <span
-          v-for="(q, i) in questions"
-          :key="q.id"
-          class="dot"
-          :class="{ filled: i < questionIndex, active: i === questionIndex }"
-        ></span>
+      <div
+        v-if="currentStep > 0 && currentStep < RESULT_STEP"
+        class="step-counter"
+      >
+        {{ currentStep }} / {{ QUESTIONS.length }}
       </div>
 
-      <div class="question-card" :key="currentQuestion.id">
-        <p class="question-text">{{ currentQuestion.text }}</p>
-        <div class="options">
-          <button
-            v-for="opt in currentQuestion.options"
-            :key="opt.tag"
-            class="option"
-            @click="selectOption(opt.tag)"
-          >
-            {{ opt.label }}
-          </button>
-        </div>
+      <div class="progress-bar" :style="{ width: progressPercent + '%' }" />
+
+      <div class="slides-wrapper">
+        <SlideCover :slide-class="slideClass(0)" @start="startForm" />
+
+        <template v-for="(q, i) in QUESTIONS" :key="i">
+          <SlideQuestion
+            v-if="q.type === 'choice'"
+            :slide-class="slideClass(i + 1)"
+            :question="q"
+            v-model="answers[i]"
+            @next="goNext"
+          />
+          <SlideImageQuestion
+            v-else-if="q.type === 'image'"
+            :slide-class="slideClass(i + 1)"
+            :question="q"
+            v-model="answers[i]"
+            @next="goNext"
+          />
+          <SlideTextInput
+            v-else-if="q.type === 'input'"
+            :slide-class="slideClass(i + 1)"
+            :question="q"
+            v-model="answers[i]"
+            @next="goNext"
+          />
+        </template>
+
+        <SlideLoading :slide-class="slideClass(LOADING_STEP)" />
+
+        <SlideResult
+          :slide-class="slideClass(RESULT_STEP)"
+          :result="result"
+          :answer-summary="answerSummary"
+          :prize="prize"
+          @enter-form="enterForm"
+        />
       </div>
     </template>
 
     <template v-else>
-      <div class="bean-reveal">
-        <div class="bean-card">
-          <div class="bean-emoji">{{ resultBean.emoji }}</div>
-          <p class="bean-tag">추천 원두</p>
-          <h2 class="bean-name">{{ resultBean.name }}</h2>
-          <p class="bean-desc">{{ resultBean.desc }}</p>
-        </div>
+      <button class="btn-back" @click="entryBack">←</button>
 
-        <div class="prize-recap">
-          <span class="prize-emoji">{{ prize.emoji }}</span>
-          <span>당첨 선물 · {{ prize.name }}</span>
-        </div>
+      <div class="step-counter">{{ entryStep + 1 }} / {{ ENTRY_FIELDS.length }}</div>
+
+      <div
+        class="progress-bar"
+        :style="{ width: ((entryStep + 1) / ENTRY_FIELDS.length) * 100 + '%' }"
+      />
+
+      <div class="slides-wrapper">
+        <SlideTextInput
+          v-for="(f, i) in ENTRY_FIELDS"
+          :key="f.key"
+          :slide-class="entrySlideClass(i)"
+          :question="f"
+          v-model="entryAnswers[f.key]"
+          :disabled="i === entryStep && !currentEntryValid"
+          :next-label="i === ENTRY_FIELDS.length - 1 ? '문자 보내기 →' : '다음 →'"
+          @next="entryNext"
+        />
       </div>
-
-      <form class="entry-form" @submit.prevent="handleSubmit">
-        <label class="field">
-          <span class="field-label">이름</span>
-          <input
-            v-model="form.name"
-            type="text"
-            placeholder="이름을 입력해주세요"
-            required
-          />
-        </label>
-
-        <label class="field">
-          <span class="field-label">연락처</span>
-          <input
-            v-model="form.contact"
-            type="tel"
-            placeholder="010-0000-0000"
-            required
-          />
-        </label>
-
-        <div class="field">
-          <span class="field-label">수령 방법</span>
-          <div class="radio-group">
-            <label class="radio-option" :class="{ active: form.receiptMethod === 'pickup' }">
-              <input type="radio" value="pickup" v-model="form.receiptMethod" />
-              직접 수령
-            </label>
-            <label class="radio-option" :class="{ active: form.receiptMethod === 'delivery' }">
-              <input type="radio" value="delivery" v-model="form.receiptMethod" />
-              택배 배송
-            </label>
-          </div>
-        </div>
-
-        <label class="field" v-if="form.receiptMethod === 'delivery'">
-          <span class="field-label">배송지</span>
-          <input
-            v-model="form.address"
-            type="text"
-            placeholder="배송받으실 주소를 입력해주세요"
-            required
-          />
-        </label>
-
-        <button class="submit-btn" type="submit" :disabled="!isValid">
-          응모 완료하기
-        </button>
-      </form>
     </template>
   </section>
 </template>
 
 <style scoped>
 .diagnosis-view {
+  position: relative;
   height: 100%;
-  overflow-y: auto;
-  padding: 2.2rem 1.5rem 2.5rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
+  overflow: hidden;
 }
 
-.eyebrow {
-  font-family: var(--font-num);
-  font-weight: 600;
-  font-size: 0.8rem;
-  letter-spacing: 0.06em;
-  color: var(--sage-d);
-}
-
-.title {
-  font-family: var(--font-head);
-  font-size: 1.7rem;
-  margin-top: 0.35rem;
-}
-
-.progress-dots {
-  display: flex;
-  gap: 0.5rem;
-  margin: 1.4rem 0;
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
+/* ── 상단 고정 UI (설문 진행 중에만 표시) ── */
+.btn-back {
+  position: absolute;
+  top: max(env(safe-area-inset-top), 14px);
+  left: 16px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: var(--line);
-  transition: background 0.2s ease, transform 0.2s ease;
-}
-
-.dot.filled {
-  background: var(--sage);
-}
-
-.dot.active {
-  background: var(--sage-d);
-  transform: scale(1.3);
-}
-
-.question-card {
-  width: 100%;
-  max-width: 340px;
-  animation: fade-in 0.3s ease;
-}
-
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.question-text {
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 1.05rem;
-  margin-bottom: 1.2rem;
-}
-
-.options {
+  background: var(--milk);
+  border: 1.5px solid var(--line);
+  color: var(--mocha-d);
+  font-size: 17px;
   display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  transition: background 0.2s;
+}
+.btn-back:active {
+  background: var(--cream-2);
 }
 
-.option {
-  background: var(--milk);
-  border: 1.5px solid var(--line);
-  border-radius: 14px;
-  padding: 0.9rem 1rem;
-  font-size: 0.92rem;
-  text-align: left;
-  transition: border-color 0.15s ease, background 0.15s ease, transform 0.08s ease;
-}
-
-.option:active {
-  transform: scale(0.98);
-  border-color: var(--sage);
-  background: #F3F6EE;
-}
-
-.bean-reveal {
-  width: 100%;
-  max-width: 340px;
-  animation: expand-in 0.45s cubic-bezier(0.34, 1.2, 0.64, 1);
-}
-
-@keyframes expand-in {
-  from { opacity: 0; transform: scale(0.9) translateY(10px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-.bean-card {
-  background: var(--milk);
-  border: 1.5px solid var(--line);
-  border-radius: 20px;
-  padding: 1.6rem 1.4rem;
-}
-
-.bean-emoji {
-  font-size: 2.6rem;
-}
-
-.bean-tag {
+.step-counter {
+  position: absolute;
+  top: max(env(safe-area-inset-top), 14px);
+  right: 16px;
+  height: 44px;
+  display: flex;
+  align-items: center;
   font-family: var(--font-num);
-  font-weight: 600;
-  font-size: 0.75rem;
-  color: var(--sage-d);
-  letter-spacing: 0.05em;
-  margin-top: 0.4rem;
-}
-
-.bean-name {
-  font-family: var(--font-head);
-  font-size: 1.4rem;
-  margin-top: 0.2rem;
-}
-
-.bean-desc {
-  font-size: 0.85rem;
+  font-size: 13px;
   color: var(--mocha-d);
-  margin-top: 0.5rem;
+  letter-spacing: 0.04em;
+  z-index: 50;
 }
 
-.prize-recap {
-  margin-top: 0.9rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  font-size: 0.8rem;
-  color: var(--caramel-d);
-  font-weight: 600;
+/* ── 진행 바 ── */
+.progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2.5px;
+  background: linear-gradient(to right, var(--caramel), var(--caramel-d));
+  transition: width 0.55s cubic-bezier(0.77, 0, 0.175, 1);
+  z-index: 100;
 }
 
-.entry-form {
+/* ── 슬라이드 컨테이너 ── */
+.slides-wrapper {
+  position: relative;
+  height: 100%;
   width: 100%;
-  max-width: 340px;
-  margin-top: 1.6rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  text-align: left;
-  animation: fade-in 0.4s ease 0.1s both;
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.field-label {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--mocha-d);
-}
-
-.field input[type='text'],
-.field input[type='tel'] {
-  background: var(--milk);
-  border: 1.5px solid var(--line);
-  border-radius: 12px;
-  padding: 0.8rem 0.9rem;
-  font-size: 0.95rem;
-  outline: none;
-  transition: border-color 0.15s ease;
-}
-
-.field input:focus {
-  border-color: var(--caramel);
-}
-
-.radio-group {
-  display: flex;
-  gap: 0.6rem;
-}
-
-.radio-option {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  padding: 0.7rem 0.5rem;
-  border-radius: 12px;
-  border: 1.5px solid var(--line);
-  background: var(--milk);
-  font-size: 0.85rem;
-  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
-}
-
-.radio-option.active {
-  border-color: var(--sage);
-  background: #F3F6EE;
-  color: var(--sage-d);
-  font-weight: 600;
-}
-
-.radio-option input {
-  display: none;
-}
-
-.submit-btn {
-  margin-top: 0.4rem;
-  font-family: var(--font-head);
-  font-size: 1.05rem;
-  color: var(--milk);
-  background: linear-gradient(180deg, var(--caramel) 0%, var(--caramel-d) 100%);
-  padding: 0.95rem 1rem;
-  border-radius: 999px;
-  box-shadow: 0 6px 0 0 #a8701f, 0 10px 18px -6px rgba(196, 131, 47, 0.5);
-  transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.15s ease;
-}
-
-.submit-btn:active {
-  transform: translateY(4px);
-  box-shadow: 0 2px 0 0 #a8701f, 0 6px 12px -6px rgba(196, 131, 47, 0.5);
-}
-
-.submit-btn:disabled {
-  opacity: 0.5;
-  box-shadow: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .question-card,
-  .bean-reveal,
-  .entry-form {
-    animation: none;
-  }
-}
 </style>
