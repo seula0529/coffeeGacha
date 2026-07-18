@@ -49,10 +49,15 @@ export const QUESTIONS = [
     ],
   },
   {
-    type: 'input',                                   // 텍스트 입력형
+    type: 'multi-input',                              // 여러 입력칸이 한 화면에 있는 입력형
     label: 'Question 05',
-    text: '이름 / 닉네임 / MBTI',
-    placeholder: '자유롭게 입력해주세요.',
+    text: '마지막으로, 응모를 위해 알려주세요',
+    fields: [
+      { key: 'name',    placeholder: '이름',                    required: true },
+      { key: 'contact', placeholder: '연락처 (010-0000-0000)',  type: 'tel', inputmode: 'tel', required: true },
+      { key: 'mbti',    placeholder: 'MBTI (선택)' },
+      { key: 'age',     placeholder: '나이 (선택)',              inputmode: 'numeric' },
+    ],
   },
 ]
 
@@ -91,8 +96,15 @@ export function useFormState() {
   const RESULT_STEP  = QUESTIONS.length + 2
   const TOTAL_STEPS  = QUESTIONS.length + 3   // cover + questions + loading + result
 
+  const initialAnswers = () =>
+    QUESTIONS.map((q) =>
+      q.type === 'multi-input'
+        ? Object.fromEntries(q.fields.map((f) => [f.key, '']))
+        : ''
+    )
+
   const currentStep = ref(0)
-  const answers     = ref(Array(QUESTIONS.length).fill(''))
+  const answers     = ref(initialAnswers())
 
   // 진행률 (cover=0%, result=100%)
   const progressPercent = computed(() => {
@@ -129,18 +141,22 @@ export function useFormState() {
   }
 
   function restart() {
-    answers.value  = Array(QUESTIONS.length).fill('')
+    answers.value  = initialAnswers()
     currentStep.value = 0
   }
 
   // 결과
   const result = computed(() => calcResult(answers.value))
 
+  // 응모자 개인정보(이름/연락처 등)를 받는 multi-input 문항은 요약에서 제외
   const answerSummary = computed(() =>
-    QUESTIONS.map((q, i) => ({
-      q: q.text.length > 16 ? q.text.slice(0, 16) + '…' : q.text,
-      a: answers.value[i] || '—',
-    }))
+    QUESTIONS
+      .map((q, i) => ({ q, a: answers.value[i] }))
+      .filter(({ q }) => q.type !== 'multi-input')
+      .map(({ q, a }) => ({
+        q: q.text.length > 16 ? q.text.slice(0, 16) + '…' : q.text,
+        a: a || '—',
+      }))
   )
 
   return {

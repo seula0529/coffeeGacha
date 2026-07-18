@@ -3,15 +3,16 @@
     <p class="q-number">{{ question.label }}</p>
     <p class="q-text">{{ question.text }}</p>
 
-    <div class="input-wrap">
+    <div class="input-list">
       <input
+        v-for="f in question.fields"
+        :key="f.key"
         class="form-input"
-        :type="question.type || 'text'"
-        :inputmode="question.inputmode"
-        :value="modelValue"
-        :placeholder="question.placeholder"
-        @input="$emit('update:modelValue', $event.target.value)"
-        @keydown.enter="!disabled && $emit('next')"
+        :type="f.type || 'text'"
+        :inputmode="f.inputmode"
+        :value="modelValue[f.key]"
+        :placeholder="f.placeholder"
+        @input="$emit('update:modelValue', { ...modelValue, [f.key]: $event.target.value })"
       >
     </div>
 
@@ -20,7 +21,7 @@
       :disabled="disabled"
       @click="$emit('next')"
     >
-      {{ nextLabel }}
+      다음 →
     </button>
   </div>
 </template>
@@ -28,10 +29,9 @@
 <script setup>
 defineProps({
   slideClass: String,
-  question:   Object,   // { label, text, placeholder, type, inputmode }
-  modelValue: String,
+  question:   Object,   // { label, text, fields: [{ key, placeholder, type, inputmode, required }] }
+  modelValue: Object,   // { [field.key]: string }
   disabled:   { type: Boolean, default: false },
-  nextLabel:  { type: String, default: '다음 →' },
 })
 defineEmits(['update:modelValue', 'next'])
 </script>
@@ -60,35 +60,36 @@ defineEmits(['update:modelValue', 'next'])
   word-break: keep-all;
 }
 
-.input-wrap {
+.input-list {
   width: 100%;
-  max-width: 440px;
-  margin-bottom: 4px;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-bottom: 8px;
 }
 
 .form-input {
   width: 100%;
-  padding: 16px 4px;
-  background: transparent;
-  border: none;
-  border-bottom: 1.5px solid var(--line);
+  background: var(--milk);
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  padding: 0.85rem 0.95rem;
   color: var(--espresso);
   font-family: var(--font-body);
   /* iOS zoom 방지: 16px 미만이면 자동 zoom 됨 */
-  font-size: max(16px, 18px);
+  font-size: 16px;
   font-weight: 400;
   outline: none;
-  caret-color: var(--caramel-d);
-  border-radius: 0;
-  transition: border-color 0.2s;
+  transition: border-color 0.15s ease;
   -webkit-appearance: none;
 }
 .form-input::placeholder {
   font-family: var(--font-body);
   color: var(--mocha-d);
-  opacity: 0.4;
+  opacity: 0.45;
 }
-.form-input:focus { border-bottom-color: var(--caramel-d); }
+.form-input:focus { border-color: var(--caramel); }
 
 .btn-next { margin-top: 24px; }
 </style>

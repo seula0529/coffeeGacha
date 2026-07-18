@@ -23,7 +23,7 @@
     </div>
 
     <button class="btn-primary btn-enter" @click="$emit('enter-form')">
-      응모하기 →
+      문자 보내고 응모하기 →
     </button>
   </div>
 </template>

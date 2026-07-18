@@ -1,10 +1,9 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useFormState } from '../composables/useFormState.js'
-import SlideCover from './SlideCover.vue'
 import SlideQuestion from './SlideQuestion.vue'
 import SlideImageQuestion from './SlideImageQuestion.vue'
-import SlideTextInput from './SlideTextInput.vue'
+import SlideMultiInput from './SlideMultiInput.vue'
 import SlideLoading from './SlideLoading.vue'
 import SlideResult from './SlideResult.vue'
 
@@ -14,8 +13,6 @@ const props = defineProps({
 
 const emit = defineEmits(['submit'])
 
-const step = ref('diagnosis') // diagnosis | entry
-
 const {
   currentStep,
   answers,
@@ -24,157 +21,105 @@ const {
   LOADING_STEP,
   RESULT_STEP,
   slideClass,
-  startForm,
   goNext,
   goBack,
   result,
   answerSummary,
 } = useFormState()
 
-function enterForm() {
-  step.value = 'entry'
-}
+// '시작하기' 커버를 거치지 않고 Q1부터 바로 시작
+currentStep.value = 1
 
-// ── 응모자 정보 입력 (SlideTextInput 슬라이드 이어붙이기) ──────────────────
-const ENTRY_FIELDS = [
-  { key: 'name',    label: 'Step 01', text: '이름을 알려주세요',         placeholder: '이름을 입력해주세요',   required: true },
-  { key: 'age',     label: 'Step 02', text: '나이가 어떻게 되시나요?',    placeholder: '나이를 입력해주세요',   type: 'text', inputmode: 'numeric' },
-  { key: 'mbti',    label: 'Step 03', text: 'MBTI가 궁금해요',          placeholder: '예: INFP' },
-  { key: 'contact', label: 'Step 04', text: '문자 받으실 연락처를 입력해주세요', placeholder: '010-0000-0000', type: 'tel', inputmode: 'tel', required: true },
-]
+// 뒤로가기 버튼: Q1(첫 화면)에서는 더 갈 곳이 없으므로 숨김
+const showBackButton = computed(() => currentStep.value > 1 && currentStep.value < RESULT_STEP)
 
-const entryStep    = ref(0)
-const entryAnswers = ref({ name: '', age: '', mbti: '', contact: '' })
+const infoIndex = QUESTIONS.findIndex((q) => q.type === 'multi-input')
 
-const entrySlideClass = (i) => {
-  if (i === entryStep.value) return 'active'
-  return i < entryStep.value ? 'above' : 'below'
-}
-
-const currentEntryField = computed(() => ENTRY_FIELDS[entryStep.value])
-const isLastEntryField  = computed(() => entryStep.value === ENTRY_FIELDS.length - 1)
-const currentEntryValid = computed(() => {
-  const f = currentEntryField.value
-  if (!f.required) return true
-  return !!entryAnswers.value[f.key].trim()
-})
-
-function entryBack() {
-  if (entryStep.value > 0) entryStep.value--
-  else step.value = 'diagnosis'
-}
-
-function entryNext() {
-  if (!currentEntryValid.value) return
-  if (isLastEntryField.value) {
-    sendSms()
-  } else {
-    entryStep.value++
-  }
+function isMultiInputValid(question, value) {
+  return question.fields.every((f) => !f.required || !!value[f.key].trim())
 }
 
 function sendSms() {
-  const { name, age, mbti, contact } = entryAnswers.value
+  const info = answers.value[infoIndex]
+  const rawPhone = info.contact.replace(/[^0-9]/g, '')
+
   const lines = [
-    `[커피 가챠] ${name}님의 진단 결과`,
-    result.value.title,
-    result.value.desc,
-    `나이: ${age || '-'} / MBTI: ${mbti || '-'}`,
-    `당첨 선물: ${props.prize.name}`,
+    `[커피 가챠]`,
+    `- 예약자명 : ${info.name}`,
+    `- 일시 : `,
+    `- 장소 : `,
+    ``,
+    `[당첨 선물]`,
+    `${props.prize.emoji} ${props.prize.name}`,
+    ``,
+    `문자 확인 시 회신 부탁드립니다.`,
+    `회신 시 예약이 확정됩니다.`,
   ]
-  const body = encodeURIComponent(lines.join('\n'))
-  const to = contact.replace(/[^0-9+]/g, '')
-  window.location.href = `sms:${to}?&body=${body}`
+  const text = lines.join('\n')
+  const encoded = encodeURIComponent(text)
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent)
+
+  if (isIos) {
+    // iOS: sms://번호?body=내용 (슬래시 두 개가 수신자 번호 인식에 필수)
+    window.location.href = `sms://${rawPhone}?body=${encoded}`
+  } else {
+    // Android: smsto:번호:내용
+    window.location.href = `smsto:${rawPhone}:${text}`
+  }
 
   emit('submit', {
     result: result.value,
-    form: { ...entryAnswers.value },
+    form: { ...info },
   })
 }
 </script>
 
 <template>
   <section class="diagnosis-view">
-    <template v-if="step === 'diagnosis'">
-      <button
-        v-if="currentStep > 0 && currentStep < RESULT_STEP"
-        class="btn-back"
-        @click="goBack"
-      >
-        ←
-      </button>
+    <button v-if="showBackButton" class="btn-back" @click="goBack">←</button>
 
-      <div
-        v-if="currentStep > 0 && currentStep < RESULT_STEP"
-        class="step-counter"
-      >
-        {{ currentStep }} / {{ QUESTIONS.length }}
-      </div>
+    <div v-if="currentStep > 0 && currentStep < RESULT_STEP" class="step-counter">
+      {{ currentStep }} / {{ QUESTIONS.length }}
+    </div>
 
-      <div class="progress-bar" :style="{ width: progressPercent + '%' }" />
+    <div class="progress-bar" :style="{ width: progressPercent + '%' }" />
 
-      <div class="slides-wrapper">
-        <SlideCover :slide-class="slideClass(0)" @start="startForm" />
-
-        <template v-for="(q, i) in QUESTIONS" :key="i">
-          <SlideQuestion
-            v-if="q.type === 'choice'"
-            :slide-class="slideClass(i + 1)"
-            :question="q"
-            v-model="answers[i]"
-            @next="goNext"
-          />
-          <SlideImageQuestion
-            v-else-if="q.type === 'image'"
-            :slide-class="slideClass(i + 1)"
-            :question="q"
-            v-model="answers[i]"
-            @next="goNext"
-          />
-          <SlideTextInput
-            v-else-if="q.type === 'input'"
-            :slide-class="slideClass(i + 1)"
-            :question="q"
-            v-model="answers[i]"
-            @next="goNext"
-          />
-        </template>
-
-        <SlideLoading :slide-class="slideClass(LOADING_STEP)" />
-
-        <SlideResult
-          :slide-class="slideClass(RESULT_STEP)"
-          :result="result"
-          :answer-summary="answerSummary"
-          :prize="prize"
-          @enter-form="enterForm"
+    <div class="slides-wrapper">
+      <template v-for="(q, i) in QUESTIONS" :key="i">
+        <SlideQuestion
+          v-if="q.type === 'choice'"
+          :slide-class="slideClass(i + 1)"
+          :question="q"
+          v-model="answers[i]"
+          @next="goNext"
         />
-      </div>
-    </template>
+        <SlideImageQuestion
+          v-else-if="q.type === 'image'"
+          :slide-class="slideClass(i + 1)"
+          :question="q"
+          v-model="answers[i]"
+          @next="goNext"
+        />
+        <SlideMultiInput
+          v-else-if="q.type === 'multi-input'"
+          :slide-class="slideClass(i + 1)"
+          :question="q"
+          v-model="answers[i]"
+          :disabled="currentStep === i + 1 && !isMultiInputValid(q, answers[i])"
+          @next="goNext"
+        />
+      </template>
 
-    <template v-else>
-      <button class="btn-back" @click="entryBack">←</button>
+      <SlideLoading :slide-class="slideClass(LOADING_STEP)" />
 
-      <div class="step-counter">{{ entryStep + 1 }} / {{ ENTRY_FIELDS.length }}</div>
-
-      <div
-        class="progress-bar"
-        :style="{ width: ((entryStep + 1) / ENTRY_FIELDS.length) * 100 + '%' }"
+      <SlideResult
+        :slide-class="slideClass(RESULT_STEP)"
+        :result="result"
+        :answer-summary="answerSummary"
+        :prize="prize"
+        @enter-form="sendSms"
       />
-
-      <div class="slides-wrapper">
-        <SlideTextInput
-          v-for="(f, i) in ENTRY_FIELDS"
-          :key="f.key"
-          :slide-class="entrySlideClass(i)"
-          :question="f"
-          v-model="entryAnswers[f.key]"
-          :disabled="i === entryStep && !currentEntryValid"
-          :next-label="i === ENTRY_FIELDS.length - 1 ? '문자 보내기 →' : '다음 →'"
-          @next="entryNext"
-        />
-      </div>
-    </template>
+    </div>
   </section>
 </template>
 
