@@ -86,7 +86,13 @@ onMounted(() => {
   left: 10%;
   width: 80%;
   height: 50%;
-  background: linear-gradient(180deg, var(--caramel) 0%, var(--caramel-d) 100%);
+  background:
+    radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 38%),
+    radial-gradient(120% 160% at 50% 100%, var(--caramel-d) 0%, var(--caramel) 55%, #f2cf96 100%);
+  box-shadow:
+    inset -5px 6px 12px rgba(255, 255, 255, 0.45),
+    inset 5px -8px 14px rgba(63, 45, 34, 0.3),
+    0 10px 18px -6px rgba(63, 45, 34, 0.4);
   transition: transform 0.5s cubic-bezier(0.5, 0, 0.5, 1), opacity 0.5s ease;
 }
 
@@ -97,7 +103,13 @@ onMounted(() => {
 
 .half.bottom {
   bottom: 0;
-  background: linear-gradient(180deg, var(--sage) 0%, var(--sage-d) 100%);
+  background:
+    radial-gradient(circle at 32% 40%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 40%),
+    radial-gradient(120% 160% at 50% 0%, #d9cfb8 0%, #fdfaf3 55%, #ffffff 100%);
+  box-shadow:
+    inset 5px 8px 12px rgba(255, 255, 255, 0.7),
+    inset -5px -8px 14px rgba(122, 86, 66, 0.35),
+    0 12px 20px -6px rgba(63, 45, 34, 0.4);
   border-radius: 8px 8px 80px 80px;
 }
 
