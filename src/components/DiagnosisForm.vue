@@ -46,7 +46,7 @@ function sendSms() {
   const rawPhone = info.contact.replace(/[^0-9]/g, '')
 
   const lines = [
-    `[커피 가챠]`,
+    `[페이버릿]`,
     `- 예약자명 : ${info.name}`,
     `- 일시 : `,
     `- 장소 : `,
