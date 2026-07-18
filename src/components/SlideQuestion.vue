@@ -3,36 +3,69 @@
     <p class="q-number">{{ question.label }}</p>
     <p class="q-text">{{ question.text }}</p>
 
+    <p v-if="isMulti" class="multi-hint">중복 선택 가능해요</p>
+
     <div class="choices">
       <button
         v-for="(opt, i) in question.options"
         :key="opt.value"
         class="choice-btn"
-        :class="{ selected: modelValue === opt.value }"
-        @click="$emit('update:modelValue', opt.value)"
+        :class="{ selected: isSelected(opt.value) }"
+        @click="handleClick(opt.value)"
       >
-        <span class="choice-key">{{ String.fromCharCode(65 + i) }}</span>
+        <span class="choice-key">
+          <template v-if="isMulti">{{ isSelected(opt.value) ? '✓' : String.fromCharCode(65 + i) }}</template>
+          <template v-else>{{ String.fromCharCode(65 + i) }}</template>
+        </span>
         {{ opt.label }}
       </button>
     </div>
 
     <button
       class="btn-primary btn-next"
-      :disabled="!modelValue"
+      :disabled="!isMulti && !modelValue"
       @click="$emit('next')"
     >
-      다음 →
+      {{ isMulti && !hasAnswer ? '건너뛰기' : '다음 →' }}
     </button>
   </div>
 </template>
 
 <script setup>
-defineProps({
+import { computed } from 'vue'
+
+const props = defineProps({
   slideClass: String,
-  question:   Object,   // { label, text, options: [{ label, value }] }
-  modelValue: String,   // 현재 선택된 값 (v-model 지원)
+  question:   Object,          // { label, text, options: [{ label, value }], type: 'choice' | 'multi-choice' }
+  modelValue: [String, Array], // 단일선택: String, 복수선택: Array
 })
-defineEmits(['update:modelValue', 'next'])
+const emit = defineEmits(['update:modelValue', 'next'])
+
+const isMulti = computed(() => props.question.type === 'multi-choice')
+
+function isSelected(value) {
+  if (isMulti.value) {
+    return Array.isArray(props.modelValue) && props.modelValue.includes(value)
+  }
+  return props.modelValue === value
+}
+
+function handleClick(value) {
+  if (isMulti.value) {
+    const current = Array.isArray(props.modelValue) ? [...props.modelValue] : []
+    const idx = current.indexOf(value)
+    if (idx === -1) current.push(value)
+    else current.splice(idx, 1)
+    emit('update:modelValue', current)
+  } else {
+    emit('update:modelValue', value)
+  }
+}
+
+const hasAnswer = computed(() => {
+  if (isMulti.value) return Array.isArray(props.modelValue) && props.modelValue.length > 0
+  return !!props.modelValue
+})
 </script>
 
 <style scoped>
@@ -57,6 +90,15 @@ defineEmits(['update:modelValue', 'next'])
   margin-bottom: 28px;
   letter-spacing: -0.01em;
   word-break: keep-all;
+}
+
+.multi-hint {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--caramel-d);
+  opacity: 0.85;
+  margin-bottom: 16px;
+  letter-spacing: 0.04em;
 }
 
 /* ── 선택지 목록 ── */

@@ -16,6 +16,19 @@
       >
     </div>
 
+    <div v-if="question.consent" class="consent-box">
+      <p class="consent-desc">{{ question.consent.text }}</p>
+      <label class="consent-label">
+        <input
+          type="checkbox"
+          class="consent-checkbox"
+          :checked="!!modelValue.agree"
+          @change="$emit('update:modelValue', { ...modelValue, agree: $event.target.checked })"
+        >
+        <span>{{ question.consent.label }}</span>
+      </label>
+    </div>
+
     <button
       class="btn-primary btn-next"
       :disabled="disabled"
@@ -90,6 +103,42 @@ defineEmits(['update:modelValue', 'next'])
   opacity: 0.45;
 }
 .form-input:focus { border-color: var(--caramel); }
+
+.consent-box {
+  width: 100%;
+  max-width: 340px;
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.consent-desc {
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--mocha-d);
+  word-break: keep-all;
+}
+
+.consent-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--espresso);
+  cursor: pointer;
+}
+
+.consent-checkbox {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: var(--sage);
+  cursor: pointer;
+}
 
 .btn-next { margin-top: 24px; }
 </style>

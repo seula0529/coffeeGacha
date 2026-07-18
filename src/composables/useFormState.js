@@ -10,47 +10,86 @@ export const QUESTIONS = [
   {
     type: 'choice',                                  // 텍스트 선택형
     label: 'Question 01',
-    text: '아메리카노를 마신다면 샷은 몇 개 넣어 드시나요?',
+    text: "커피, 왜 마시게 됐나요?",
     options: [
-      { label: '싫어요 (없이도 괜찮아요)', value: '없음' },
-      { label: '1~2샷',                   value: '1-2샷' },
-      { label: '3~4샷',                   value: '3-4샷' },
+      { label: "☀️  눈 뜨려고 (각성 효과)", value: "각성" },
+      { label: "💬  누군가와 함께하는 시간에", value: "소통" },
+      { label: "☕  그냥 맛이 좋아서", value: "맛" },
+      { label: "😌  혼자만의 여유가 필요해서", value: "여유" },
+      { label: "🚫  커피는 잘 안 마셔요", value: "비음용" },
     ],
   },
   {
     type: 'choice',
     label: 'Question 02',
-    text: '좋아하는 카페 분위기는?',
+   text: "어떤 향의 커피가 끌리나요?",
     options: [
-      { label: '조용하고 아늑한 북카페',  value: '북카페' },
-      { label: '루프탑/뷰가 좋은 카페',   value: '루프탑' },
-      { label: '감성 인테리어 카페',      value: '감성카페' },
+      { label: "🍋  상큼하고 과일향 나는 커피", value: "과일향" },
+      {
+        label: "🌸  은은한 꽃향기가 마치 차를 마시는 것같은 커피",
+        value: "플로럴",
+      },
+      {
+        label: "🌰  구수하고 묵직한 견과류·다크 초콜릿향 커피",
+        value: "견과류향",
+      },
+      { label: "🤷  잘 모르겠고 그냥 탄 맛만 아니면 되요", value: "모름" },
     ],
   },
   {
-    type: 'choice',
+    type: 'image',
     label: 'Question 03',
-    text: '카페인에 민감한 편인가요?',
+    text: "나의 카페 최애 음료는?",
     options: [
-      { label: '민감해요 (오후엔 디카페인!)', value: '민감' },
-      { label: '보통이에요',                 value: '보통' },
-      { label: '전혀 안 민감해요',           value: '강함' },
+      {
+        label: "커피",
+        value: "커피",
+        img: "https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?q=80&w=300&h=300&auto=format&fit=crop",
+      },
+      {
+        label: "논카페인 라떼",
+        value: "논카페인 라떼",
+        img: "https://images.unsplash.com/photo-1515823064-d6e0c04616a7?auto=format&fit=crop&q=80&w=300&h=300",
+      },
+      {
+        label: "프라페, 스무디",
+        value: "프라페, 스무디",
+        img: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?auto=format&fit=crop&q=80&w=300&h=300",
+      },
+      {
+        label: "아이스티, 에이드",
+        value: "아이스티, 에이드",
+        img: "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&q=80&w=300&h=300",
+      },
     ],
   },
   {
-    type: 'image',                                   // 이미지 선택형
+    type: 'multi-choice',                                   // 이미지 선택형
     label: 'Question 04',
-    text: '지금 가장 마시고 싶은 커피는?',
+    text: '어떤 컨셉의 카페를 찾아가나요?',
     options: [
-      { label: '아메리카노',    value: '아메리카노', img: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=300&h=300&fit=crop&q=70' },
-      { label: '라떼 (우유계열)', value: '라떼',    img: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=300&h=300&fit=crop&q=70' },
-      { label: '달달한 스무디류', value: '스무디',  img: 'https://images.unsplash.com/photo-1578374173705-969cbe6f2d6b?w=300&h=300&fit=crop&q=70' },
-      { label: '차, 허브티',    value: '차',        img: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=300&h=300&fit=crop&q=70' },
+      { label: '🎨  체험·공방형 (드로잉, 베이킹 등)', value: '체험형' },
+      { label: '🍽️  카페 오마카세·취향 큐레이션',     value: '오마카세' },
+      { label: '🐾  테마형 (애견, 식물, 보드게임 등)', value: '테마형' },
+      { label: '📚  조용한 작업·독서 카페',            value: '작업형' },
+      { label: '✨  분위기·인테리어 감성 카페',         value: '감성형' },
+    ],
+  },
+  {
+    type: 'multi-choice',
+    label: 'Question 05',
+    text: '카페는 주로 누구와 함께 가나요?',
+    options: [
+      { label: '🧍  혼자',          value: '혼자' },
+      { label: '👫  연인과',        value: '연인' },
+      { label: '👯  친구와',        value: '친구' },
+      { label: '💼  동료·비즈니스', value: '동료' },
+      { label: '👨‍👩‍👧  가족과',   value: '가족' },
     ],
   },
   {
     type: 'multi-input',                              // 여러 입력칸이 한 화면에 있는 입력형
-    label: 'Question 05',
+    label: 'Question 06',
     text: '마지막으로, 응모를 위해 알려주세요',
     fields: [
       { key: 'name',    placeholder: '이름',                    required: true },
@@ -58,25 +97,28 @@ export const QUESTIONS = [
       { key: 'mbti',    placeholder: 'MBTI (선택)' },
       { key: 'age',     placeholder: '나이 (선택)',              inputmode: 'numeric' },
     ],
+    consent: {
+      text: '입력하신 이름, 연락처, 나이, MBTI는 응모 및 당첨자 안내 목적으로만 사용되며, 경품 발송 완료 후 즉시 파기됩니다. 본 개인정보 수집·이용에 동의하지 않으실 수 있으나, 미동의 시 응모 참여가 제한될 수 있습니다.',
+      label: '개인정보 수집 및 이용에 동의합니다.',
+    },
   },
 ]
 
 // ── 결과 계산 ────────────────────────────────────────────────────────────────
 function calcResult(answers) {
-  const drink    = answers[3]
-  const caffeine = answers[2]
+  const drink = answers[2] // Q3: 나의 카페 최애 음료는?
 
   const titleMap = {
-    '아메리카노': caffeine === '강함' ? '블랙 커피 마스터 ☕' : '아메리카노 러버 ☕',
-    '라떼':       '밀키 러버 🥛',
-    '스무디':     '달콤한 하루 🍓',
-    '차':         '여유로운 티 러버 🍵',
+    '커피':          '블랙 커피 마스터 ☕',
+    '논카페인 라떼': '밀키 러버 🥛',
+    '프라페, 스무디': '달콤한 하루 🍓',
+    '아이스티, 에이드': '여유로운 티 러버 🍵',
   }
   const descMap = {
-    '아메리카노': '커피 본연의 맛을 사랑하는 당신. 블랙으로 마셔야 진짜 커피죠.',
-    '라떼':       '부드럽고 고소한 밀크 커피가 잘 어울리는 당신. 하루의 위안 같은 존재예요.',
-    '스무디':     '달달하고 시원한 음료가 취향인 당신. 카페는 즐거운 공간이에요!',
-    '차':         '차 한 잔의 여유를 아는 당신. 커피 대신 차 한 잔으로 하루를 시작해요.',
+    '커피':          '커피 본연의 맛을 사랑하는 당신. 블랙으로 마셔야 진짜 커피죠.',
+    '논카페인 라떼': '부드럽고 고소한 밀크 커피가 잘 어울리는 당신. 카페인 부담 없이 편안하게 즐겨요.',
+    '프라페, 스무디': '달달하고 시원한 음료가 취향인 당신. 카페는 즐거운 공간이에요!',
+    '아이스티, 에이드': '차 한 잔의 여유를 아는 당신. 시원하고 산뜻한 음료로 하루를 채워요.',
   }
 
   return {
@@ -97,11 +139,15 @@ export function useFormState() {
   const TOTAL_STEPS  = QUESTIONS.length + 3   // cover + questions + loading + result
 
   const initialAnswers = () =>
-    QUESTIONS.map((q) =>
-      q.type === 'multi-input'
-        ? Object.fromEntries(q.fields.map((f) => [f.key, '']))
-        : ''
-    )
+    QUESTIONS.map((q) => {
+      if (q.type === 'multi-input') {
+        const value = Object.fromEntries(q.fields.map((f) => [f.key, '']))
+        if (q.consent) value.agree = false
+        return value
+      }
+      if (q.type === 'multi-choice') return []
+      return ''
+    })
 
   const currentStep = ref(0)
   const answers     = ref(initialAnswers())
@@ -155,7 +201,7 @@ export function useFormState() {
       .filter(({ q }) => q.type !== 'multi-input')
       .map(({ q, a }) => ({
         q: q.text.length > 16 ? q.text.slice(0, 16) + '…' : q.text,
-        a: a || '—',
+        a: Array.isArray(a) ? (a.join(', ') || '—') : (a || '—'),
       }))
   )
 

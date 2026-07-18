@@ -36,7 +36,9 @@ const showBackButton = computed(() => currentStep.value > 1 && currentStep.value
 const infoIndex = QUESTIONS.findIndex((q) => q.type === 'multi-input')
 
 function isMultiInputValid(question, value) {
-  return question.fields.every((f) => !f.required || !!value[f.key].trim())
+  const fieldsOk = question.fields.every((f) => !f.required || !!value[f.key].trim())
+  const consentOk = !question.consent || !!value.agree
+  return fieldsOk && consentOk
 }
 
 function sendSms() {
@@ -87,7 +89,7 @@ function sendSms() {
     <div class="slides-wrapper">
       <template v-for="(q, i) in QUESTIONS" :key="i">
         <SlideQuestion
-          v-if="q.type === 'choice'"
+          v-if="q.type === 'choice' || q.type === 'multi-choice'"
           :slide-class="slideClass(i + 1)"
           :question="q"
           v-model="answers[i]"
